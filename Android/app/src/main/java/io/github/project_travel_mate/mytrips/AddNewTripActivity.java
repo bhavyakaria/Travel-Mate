@@ -29,7 +29,7 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.Date;
 import java.util.Objects;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -37,9 +37,8 @@ import javax.net.ssl.HttpsURLConnection;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.github.project_travel_mate.R;
-import io.github.project_travel_mate.searchcitydialog.CitySearchDialogCompat;
+import io.github.project_travel_mate.searchcitydialog.CitySearchBottomSheetDialogFragment;
 import io.github.project_travel_mate.searchcitydialog.CitySearchModel;
-import ir.mirrajabi.searchdialog.core.SearchResultListener;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MultipartBody;
@@ -56,6 +55,7 @@ import static utils.Constants.USER_TOKEN;
 /**
  * Activity to add new trip
  */
+
 public class AddNewTripActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener,
         View.OnClickListener, TravelmateSnackbars {
 
@@ -80,6 +80,7 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
     private Handler mHandler;
     private DatePickerDialog mDatePickerDialog;
     private ArrayList<CitySearchModel> mSearchCities = new ArrayList<>();
+    Calendar calendar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,14 +93,15 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
         mHandler = new Handler(Looper.getMainLooper());
         mToken = sharedPreferences.getString(USER_TOKEN, null);
 
-        final Calendar calendar = Calendar.getInstance();
+        calendar = Calendar.getInstance();
 
         mDatePickerDialog = new DatePickerDialog(
                 AddNewTripActivity.this,
                 AddNewTripActivity.this,
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH));
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
 
         fetchCitiesList();
 
@@ -110,7 +112,7 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
         Objects.requireNonNull(getSupportActionBar()).setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
-          
+
     /**
      * Calls API to add  new trip
      */
@@ -162,15 +164,17 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
                     mHandler.post(() -> {
                         if (responseCode == HttpsURLConnection.HTTP_CREATED) {
                             TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
-                                    R.string.trip_added, Snackbar.LENGTH_LONG).show();
+                                                               R.string.trip_added, Snackbar.LENGTH_LONG
+                            ).show();
                             //Call back to MytripsFragment
                             Intent returnIntent = new Intent();
-                            setResult(Activity.RESULT_OK , returnIntent);
+                            setResult(Activity.RESULT_OK, returnIntent);
                             finish();
 
                         } else {
                             TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
-                                    res, Snackbar.LENGTH_LONG).show();
+                                                               res, Snackbar.LENGTH_LONG
+                            ).show();
                         }
                     });
 
@@ -219,7 +223,8 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
                                 mSearchCities.add(new CitySearchModel(
                                         ar.getJSONObject(i).getString("city_name"),
                                         ar.getJSONObject(i).optString("image"),
-                                        ar.getJSONObject(i).getString("id")));
+                                        ar.getJSONObject(i).getString("id")
+                                ));
                             }
                         } catch (JSONException | IOException e) {
                             e.printStackTrace();
@@ -236,8 +241,9 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
+        if (item.getItemId() == android.R.id.home) {
             finish();
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -246,6 +252,7 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
         switch (view.getId()) {
             // Set Start date
             case R.id.sdate:
+
                 mDatePickerDialog.show();
                 break;
             // Add a new trip
@@ -255,25 +262,32 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
 
                 if (mTripname.trim().equals("")) {
                     TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
-                            R.string.trip_name_blank, Snackbar.LENGTH_LONG).show();
+                                                       R.string.trip_name_blank, Snackbar.LENGTH_LONG
+                    ).show();
                 } else if (tripStartDate == null || tripStartDate.getText().toString().equals("")) {
                     TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
-                            R.string.trip_date_blank, Snackbar.LENGTH_LONG).show();
+                                                       R.string.trip_date_blank, Snackbar.LENGTH_LONG
+                    ).show();
                 } else if (mCityid == null) {
                     TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
-                            R.string.trip_city_blank, Snackbar.LENGTH_LONG).show();
-                } else
+                                                       R.string.trip_city_blank, Snackbar.LENGTH_LONG
+                    ).show();
+                } else {
                     addTrip();
-            
+                }
+
                 break;
-            case R.id.select_city_name :
-                new CitySearchDialogCompat(AddNewTripActivity.this, getString(R.string.search_title),
-                        getString(R.string.search_hint), null, mSearchCities,
-                        (SearchResultListener<CitySearchModel>) (dialog, item, position) -> {
-                            mCityid = item.getId();
-                            cityName.setText(item.getTitle());
-                            dialog.dismiss();
-                        }).show();
+            case R.id.select_city_name:
+                CitySearchBottomSheetDialogFragment citySearchBottomSheetDialogFragment =
+                        CitySearchBottomSheetDialogFragment.newInstance(R.string.search_title, R.string.search_hint);
+                citySearchBottomSheetDialogFragment.setmCitySearchModels(mSearchCities);
+                citySearchBottomSheetDialogFragment.setmListener(position -> {
+                    CitySearchModel item = mSearchCities.get(position);
+                    mCityid = item.getId();
+                    cityName.setText(item.getTitle());
+                    citySearchBottomSheetDialogFragment.dismissAllowingStateLoss();
+                });
+                citySearchBottomSheetDialogFragment.show(getSupportFragmentManager(), "CitySearch");
                 break;
 
         }
@@ -296,9 +310,28 @@ public class AddNewTripActivity extends AppCompatActivity implements DatePickerD
 
     @Override
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-        Calendar calendar = new GregorianCalendar(year, month, dayOfMonth);
-        Log.d("Month", String.valueOf(month));
-        mStartdate = Long.toString(calendar.getTimeInMillis() / 1000);
-        tripStartDate.setText(dayOfMonth + "/" + (month + 1) + "/" + year);
+
+        Date currentDate = calendar.getTime();
+
+        Calendar selectedCalendar = Calendar.getInstance();
+        selectedCalendar.set(year, month, dayOfMonth);
+
+        Date selectedDate = selectedCalendar.getTime();
+
+        if (selectedDate.compareTo(currentDate) > 0) {
+            Log.d("Month", String.valueOf(month));
+            mStartdate = Long.toString(selectedDate.getTime() / 1000);
+            tripStartDate.setText(dayOfMonth + "/" + (month + 1) + "/" + year);
+        } else if (selectedDate.compareTo(currentDate) == 0) {
+            TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
+                                               R.string.wrong_date_alert, Snackbar.LENGTH_LONG
+            ).show();
+            return;
+        } else {
+            TravelmateSnackbars.createSnackBar(findViewById(R.id.activityAddNewTrip),
+                                               R.string.wrong_date_alert, Snackbar.LENGTH_LONG
+            ).show();
+            return;
+        }
     }
 }

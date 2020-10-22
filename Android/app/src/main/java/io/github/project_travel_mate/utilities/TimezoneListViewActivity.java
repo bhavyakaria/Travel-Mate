@@ -9,9 +9,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,9 +54,9 @@ public class TimezoneListViewActivity extends Activity implements TextWatcher {
      *
      */
     public void addTimezones() {
-        String[] locales = Locale.getISOCountries();
-        for (String countryCode : locales) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            String[] locales = Locale.getISOCountries();
+            for (String countryCode : locales) {
                 for (String id : android.icu.util.TimeZone.getAvailableIDs(countryCode)) {
                     final String zone = displayTimeZone(TimeZone.getTimeZone(id));
                     if (!zone.equalsIgnoreCase("GMT (GMT0:00)")) {
@@ -66,14 +64,18 @@ public class TimezoneListViewActivity extends Activity implements TextWatcher {
                         timezone_names.add(new ZoneName(zone, countryCode));
                     }
                 }
-
-            } else {
-                Toast.makeText(getApplicationContext(), "This feature requires android version 6 or more",
-                               Toast.LENGTH_SHORT).show();
-                Log.d(mTAG, "addTimezones: Requires android version 6 or higher");
-                break;
             }
+        } else {
+            for (String id : java.util.TimeZone.getAvailableIDs()) {
+                final String zone = displayTimeZone(TimeZone.getTimeZone(id));
+                if (!zone.equalsIgnoreCase("GMT (GMT0:00)")) {
+                    // Add timezone to result map
+                    timezone_names.add(new ZoneName(zone, id));
+                }
+            }
+
         }
+
 
         Collections.sort(timezone_names, (n1, n2) -> n1.shortName.compareTo(n2.shortName));
 

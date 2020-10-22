@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -33,6 +34,7 @@ import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import io.github.project_travel_mate.MainActivity;
 import io.github.project_travel_mate.R;
 import objects.Quote;
@@ -51,7 +53,6 @@ import static utils.Constants.USER_TOKEN;
 public class DailyQuotesFragment extends Fragment {
 
     private Handler mHandler;
-    private Random mRandom;
     private ViewHolder mHolder;
     private File mFile;
 
@@ -66,7 +67,6 @@ public class DailyQuotesFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mRandom = new Random();
         mHandler = new Handler(Looper.getMainLooper());
 
     }
@@ -76,13 +76,8 @@ public class DailyQuotesFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_daily_quotes, container, false);
         mHolder = new ViewHolder(view);
-        mRandom = new Random();
-        mHolder.rootLayout.setOnClickListener(view1 -> closeQuoteFragment());
-        mHolder.share.setOnClickListener(view1 -> shareClicked());
-        mHolder.negativeButton.setOnClickListener(view1 -> doNotShowClicked());
 
         getQuote();
-
         return view;
     }
 
@@ -127,7 +122,7 @@ public class DailyQuotesFragment extends Fragment {
                         QuoteGroup quoteGroup = gson.fromJson(res, QuoteGroup.class);
                         int totalQuotes = quoteGroup.getQuotes().size();
 
-                        Quote randomQuote = quoteGroup.getQuotes().get(mRandom.nextInt(totalQuotes));
+                        Quote randomQuote = quoteGroup.getQuotes().get(new Random().nextInt(totalQuotes));
                         mHolder.quoteTv.setText(randomQuote.getQuote());
                         if (!randomQuote.getAuthor().isEmpty() && !randomQuote.getAuthor().equals("null")) {
                             mHolder.authorTv.setVisibility(View.VISIBLE);
@@ -170,9 +165,15 @@ public class DailyQuotesFragment extends Fragment {
         return bitmap;
     }
 
-    void doNotShowClicked() {
+    /**
+     * Check if checkbox to don't show daily quote again is checked,
+     * then close the fragment
+     */
+    void continueClicked() {
         if (getFragmentManager() != null) {
-            DailyQuotesManager.dontShowQuotes(getContext());
+            if (mHolder.quotesCheckBox.isChecked()) {
+                DailyQuotesManager.dontShowQuotes(getContext());
+            }
             closeQuoteFragment();
         }
     }
@@ -189,21 +190,23 @@ public class DailyQuotesFragment extends Fragment {
         }
     }
 
+    /**
+     * This method hides the unnecessary controls before screenshotting
+     * the currently displayed quote
+     */
     @SuppressLint("RestrictedApi")
     void shareClicked() {
-        View rootView = Objects.requireNonNull(getActivity())
-                .getWindow()
-                .getDecorView()
-                .findViewById(android.R.id.content);
-        FlatButton negButton = rootView.findViewById(R.id.negative_button);
-        FloatingActionButton fab = rootView.findViewById(R.id.fab);
-        negButton.setVisibility(View.GONE);
-        fab.setVisibility(View.INVISIBLE);
-        Bitmap b = getScreenShot(rootView);
+        this.mHolder.continueButton.setVisibility(View.GONE);
+        this.mHolder.quotesCheckBox.setVisibility(View.GONE);
+        this.mHolder.share.setVisibility(View.GONE);
+
+        Bitmap b = getScreenShot(this.mHolder.view);
         store(b, "myfile" + System.currentTimeMillis() + ".png");
         shareImage(mFile);
-        negButton.setVisibility(View.VISIBLE);
-        fab.setVisibility(View.VISIBLE);
+
+        this.mHolder.continueButton.setVisibility(View.VISIBLE);
+        this.mHolder.quotesCheckBox.setVisibility(View.VISIBLE);
+        this.mHolder.share.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -246,8 +249,6 @@ public class DailyQuotesFragment extends Fragment {
     }
 
     class ViewHolder {
-
-        // Dagger Binding
         @BindView(R.id.root_layout)
         LinearLayout rootLayout;
         @BindView(R.id.animation_view)
@@ -258,11 +259,24 @@ public class DailyQuotesFragment extends Fragment {
         TextView authorTv;
         @BindView(R.id.fab)
         FloatingActionButton share;
-        @BindView(R.id.negative_button)
-        FlatButton negativeButton;
-
+        @BindView(R.id.continue_button)
+        FlatButton continueButton;
+        @BindView(R.id.dont_show_quotes_checkBox)
+        CheckBox quotesCheckBox;
+        View view;
         ViewHolder(View view) {
             ButterKnife.bind(this, view);
+            this.view = view;
+        }
+
+        @OnClick(R.id.fab)
+        public void onFloatingActionBarClicked() {
+            shareClicked();
+        }
+
+        @OnClick(R.id.continue_button)
+        public void onContinueButtonClicked() {
+            continueClicked();
         }
 
     }

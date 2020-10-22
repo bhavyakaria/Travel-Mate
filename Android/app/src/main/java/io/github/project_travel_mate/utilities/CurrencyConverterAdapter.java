@@ -16,7 +16,6 @@ import com.blongho.country_data.Country;
 import com.blongho.country_data.World;
 
 import java.util.ArrayList;
-
 import java.util.List;
 
 import butterknife.BindView;
@@ -38,7 +37,6 @@ public class CurrencyConverterAdapter extends RecyclerView.Adapter<CurrencyConve
         this.mListCurrencyNames = list;
         this.mListCurrencyNamesFiltered = list;
         Log.d("my list size", "" + getCount());
-        World.init(this.activity.getApplicationContext());
         mCountryList = World.getAllCountries();
     }
 
